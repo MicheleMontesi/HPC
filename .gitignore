@@ -1,3 +1,4 @@
 /.vscode
 /GPT
 *.exe
+*.o
