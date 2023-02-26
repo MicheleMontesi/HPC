@@ -181,7 +181,7 @@ void compute_density_pressure( particle_t *particles, int particles_per_proc, in
       end = n_particles;
     }
 
-    for (int i= rank * particles_per_proc; i<(rank+1) * particles_per_proc; i++) {
+    for (int i=start; i<end; i++) {
         particle_t *pi = &particles[i];
         pi->rho = 0.0;
         for (int j=0; j<n_particles; j++) {
