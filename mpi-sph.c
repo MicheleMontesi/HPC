@@ -166,7 +166,7 @@ void init_sph( int n )
  ** You may parallelize the following four functions
  **/
 
-void compute_density_pressure( int *particles, int particles_per_proc, int rank, int size )
+void compute_density_pressure( particle_t *particles, int particles_per_proc, int rank, int size )
 {
     const float HSQ = H * H;    // radius^2 for optimization
 
@@ -174,6 +174,12 @@ void compute_density_pressure( int *particles, int particles_per_proc, int rank,
        to 2D per "SPH Based Shallow Water Simulation" by Solenthaler
        et al. */
     const float POLY6 = 4.0 / (M_PI * pow(H, 8));
+    
+    int start = rank * particles_per_proc;
+    int end = (rank+1) * particles_per_proc;
+    if (rank == size - 1) {
+      end = n_particles;
+    }
 
     for (int i= rank * particles_per_proc; i<(rank+1) * particles_per_proc; i++) {
         particle_t *pi = &particles[i];
