@@ -166,7 +166,7 @@ void init_sph( int n )
  ** You may parallelize the following four functions
  **/
 
-void compute_density_pressure( void )
+void compute_density_pressure( int *particles, int particles_per_proc, int rank, int size )
 {
     const float HSQ = H * H;    // radius^2 for optimization
 
@@ -175,27 +175,8 @@ void compute_density_pressure( void )
        et al. */
     const float POLY6 = 4.0 / (M_PI * pow(H, 8));
 
-    int rank, size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    const int particles_per_proc = n_particles / size;
-
-    // allocate memory for particles assigned to this process
-    particle_t *local_particles = malloc(particles_per_proc * sizeof(particle_t));
-
-    // scatter particles to each process
-    MPI_Scatter(particles, 
-                particles_per_proc * sizeof(particle_t), 
-                MPI_BYTE,
-                local_particles, 
-                particles_per_proc * sizeof(particle_t), 
-                MPI_BYTE,
-                0, 
-                MPI_COMM_WORLD);
-    
-    for (int i=0; i<particles_per_proc; i++) {
-        particle_t *pi = &local_particles[i];
+    for (int i= rank * particles_per_proc; i<(rank+1) * particles_per_proc; i++) {
+        particle_t *pi = &particles[i];
         pi->rho = 0.0;
         for (int j=0; j<n_particles; j++) {
             const particle_t *pj = &particles[j];
@@ -210,18 +191,6 @@ void compute_density_pressure( void )
         }
         pi->p = GAS_CONST * (pi->rho - REST_DENS);
     }
-
-    // gather particles from each process into particles array
-    MPI_Gather(local_particles, 
-                particles_per_proc * sizeof(particle_t), 
-                MPI_BYTE,
-                particles, 
-                particles_per_proc * sizeof(particle_t), 
-                MPI_BYTE,
-                0, 
-                MPI_COMM_WORLD);
-
-    free(local_particles);
 }
 
 void compute_forces( void )
@@ -307,12 +276,12 @@ float avg_velocities( void )
     return result;
 }
 
-void update( void )
-{
-    compute_density_pressure();
-    compute_forces();
-    integrate();
-}
+// void update( void )
+// {
+//     compute_density_pressure();
+//     compute_forces();
+//     integrate();
+// }
 
 #ifdef GUI
 /**
@@ -406,7 +375,12 @@ void mouse_handler(int button, int state, int x, int y)
 
 int main(int argc, char **argv)
 {
+    int rank, size;
     srand(1234);
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     particles = (particle_t*)malloc(MAX_PARTICLES * sizeof(*particles));
     assert( particles != NULL );
@@ -430,8 +404,9 @@ int main(int argc, char **argv)
     int nsteps = 50;
 
     if (argc > 3) {
-        fprintf(stderr, "Usage: %s [nparticles [nsteps]]\n", argv[0]);
-        return EXIT_FAILURE;
+      if (rank == 0) fprintf(stderr, "Usage: %s [nparticles [nsteps]]\n", argv[0]);
+      MPI_Finalize();
+      return EXIT_FAILURE;
     }
 
     if (argc > 1) {
@@ -443,21 +418,54 @@ int main(int argc, char **argv)
     }
 
     if (n > MAX_PARTICLES) {
-        fprintf(stderr, "FATAL: the maximum number of particles is %d\n", MAX_PARTICLES);
+        if (rank == 0) fprintf(stderr, "FATAL: the maximum number of particles is %d\n", MAX_PARTICLES);
+        MPI_Finalize();
         return EXIT_FAILURE;
     }
 
-    init_sph(n);
+    int particles_per_proc = n / size;
+    if (n % size != 0) particles_per_proc += 1;
+
+    if (rank == 0) init_sph(n);
+
+    MPI_Scatter(
+      particles,
+      particles_per_proc * sizeof(particle_t),
+      MPI_BYTE,
+      particles,
+      particles_per_proc * sizeof(particle_t),
+      MPI_BYTE,
+      0,
+      MPI_COMM_WORLD
+    );
+
     for (int s=0; s<nsteps; s++) {
-        update();
+        compute_density_pressure(particles, particles_per_proc, rank, size);
+
+        MPI_Allgather(
+          MPI_IN_PLACE,
+          0,
+          MPI_DATATYPE_NULL,
+          particles,
+          particles_per_proc * sizeof(particle_t),
+          MPI_BYTE,
+          MPI_COMM_WORLD
+        );
+
+        if (rank == 0) compute_forces();
+        if (rank == 0) integrate();
         /* the average velocities MUST be computed at each step, even
            if it is not shown (to ensure constant workload per
            iteration) */
-        const float avg = avg_velocities();
-        if (s % 10 == 0)
+        if (rank == 0) {
+          const float avg = avg_velocities();
+          if (s % 10 == 0) {
             printf("step %5d, avgV=%f\n", s, avg);
+          }
+        }
     }
 #endif
     free(particles);
+    MPI_Finalize();
     return EXIT_SUCCESS;
 }
