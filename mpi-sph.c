@@ -437,7 +437,7 @@ int main(int argc, char **argv)
     if (rank == nproc - 1) {
       n_local += n_particles % nproc;
     }
-    
+
     local_data = (particle_t*)malloc(n_local * sizeof(particle_t));
 
     local_count = (int*)malloc(nproc * sizeof(int));
@@ -451,6 +451,8 @@ int main(int argc, char **argv)
       local_offset[i] = i* (n_particles / nproc);
     }
 
+    printf("rank = %d, offset = %d, count = %d\n", rank, local_offset[rank], local_count[rank]);
+
     int local_start = local_offset[rank];
     int local_end = local_offset[rank] + local_count[rank];
 
@@ -462,34 +464,18 @@ int main(int argc, char **argv)
            if it is not shown (to ensure constant workload per
            iteration) */
         const float avg = avg_velocities();
-        
-        
-        float *avg_all = NULL;
-        int *avg_count = NULL;
-        int *avg_displs = NULL;
-        if (rank == 0) {
-          avg_all = (float*)malloc(sizeof(float));
-          avg_count = (int*)malloc(sizeof(int));
-          avg_displs = (int*)malloc(sizeof(int));
-        }
+        float global_avg;
 
-        MPI_Gatherv(&avg, 1, MPI_FLOAT, avg_all, avg_count, avg_displs, MPI_FLOAT, 0, MPI_COMM_WORLD);
+        // printf("%d %f\n", rank, avg);
 
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Reduce(&avg, &global_avg, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+        
         if (rank == 0) {
-          float avg_total = 0.0;
-          for (int i = 0; i < nproc; i++) {
-            avg_total += avg_all[i];
-          }
-          avg_total /= nproc;
-          
+          global_avg /= nproc;
           if (s % 10 == 0)
-              printf("step %5d, avgV=%f\n", s, avg_total);
-
-          free(avg_all);
-          free(avg_count);
-          free(avg_displs);
+              printf("step %5d, avgV=%f\n", s, global_avg);
         }
-
     }
 #endif
     free(particles);
