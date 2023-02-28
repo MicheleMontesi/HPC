@@ -166,7 +166,7 @@ void init_sph( int n )
  ** You may parallelize the following four functions
  **/
 
-void compute_density_pressure( particle_t *particles, int particles_per_proc, int rank, int size )
+void compute_density_pressure( particle_t *local_data, int start, int end )
 {
     const float HSQ = H * H;    // radius^2 for optimization
 
@@ -174,18 +174,12 @@ void compute_density_pressure( particle_t *particles, int particles_per_proc, in
        to 2D per "SPH Based Shallow Water Simulation" by Solenthaler
        et al. */
     const float POLY6 = 4.0 / (M_PI * pow(H, 8));
-    
-    int start = rank * particles_per_proc;
-    int end = (rank+1) * particles_per_proc;
-    if (rank == size - 1) {
-      end = n_particles;
-    }
 
     for (int i=start; i<end; i++) {
-        particle_t *pi = &particles[i];
+        particle_t *pi = &local_data[i];
         pi->rho = 0.0;
         for (int j=0; j<n_particles; j++) {
-            const particle_t *pj = &particles[j];
+            const particle_t *pj = &local_data[j];
 
             const float dx = pj->x - pi->x;
             const float dy = pj->y - pi->y;
@@ -199,7 +193,7 @@ void compute_density_pressure( particle_t *particles, int particles_per_proc, in
     }
 }
 
-void compute_forces( void )
+void compute_forces( particle_t *local_data, int start, int end )
 {
     /* Smoothing kernels defined in Muller and their gradients adapted
        to 2D per "SPH Based Shallow Water Simulation" by Solenthaler
@@ -208,13 +202,13 @@ void compute_forces( void )
     const float VISC_LAP = 40.0 / (M_PI * pow(H, 5));
     const float EPS = 1e-6;
 
-    for (int i=0; i<n_particles; i++) {
-        particle_t *pi = &particles[i];
+    for (int i=start; i<end; i++) {
+        particle_t *pi = &local_data[i];
         float fpress_x = 0.0, fpress_y = 0.0;
         float fvisc_x = 0.0, fvisc_y = 0.0;
 
         for (int j=0; j<n_particles; j++) {
-            const particle_t *pj = &particles[j];
+            const particle_t *pj = &local_data[j];
 
             if (pi == pj)
                 continue;
@@ -241,10 +235,10 @@ void compute_forces( void )
     }
 }
 
-void integrate( void )
+void integrate( particle_t *local_data, int start, int end )
 {
-    for (int i=0; i<n_particles; i++) {
-        particle_t *p = &particles[i];
+    for (int i=start; i<end; i++) {
+        particle_t *p = &local_data[i];
         // forward Euler integration
         p->vx += DT * p->fx / p->rho;
         p->vy += DT * p->fy / p->rho;
@@ -282,12 +276,12 @@ float avg_velocities( void )
     return result;
 }
 
-// void update( void )
-// {
-//     compute_density_pressure();
-//     compute_forces();
-//     integrate();
-// }
+void update( particle_t *local_data, int local_start, int local_end )
+{
+    compute_density_pressure(local_data, local_start, local_end);
+    compute_forces(local_data, local_start, local_end);
+    integrate(local_data, local_start, local_end);
+}
 
 #ifdef GUI
 /**
@@ -381,12 +375,18 @@ void mouse_handler(int button, int state, int x, int y)
 
 int main(int argc, char **argv)
 {
-    int rank, size;
-    srand(1234);
-
     MPI_Init(&argc, &argv);
+    int rank, nproc;
+
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+
+    int n_local;              /** numero di particelle locali */
+    particle_t *local_data;   /** dati particelle locali */
+    int *local_count;         /** conteggio delle particelle in ogni processo */
+    int *local_offset;        /** offset dei dati delle particelle locali */
+
+    srand(1234);
 
     particles = (particle_t*)malloc(MAX_PARTICLES * sizeof(*particles));
     assert( particles != NULL );
@@ -409,69 +409,92 @@ int main(int argc, char **argv)
     int n = DAM_PARTICLES;
     int nsteps = 50;
 
-    if (argc > 3) {
-      if (rank == 0) fprintf(stderr, "Usage: %s [nparticles [nsteps]]\n", argv[0]);
-      MPI_Finalize();
-      return EXIT_FAILURE;
+    if (rank == 0) {
+        if (argc > 3) {
+            fprintf(stderr, "Usage: %s [nparticles [nsteps]]\n", argv[0]);
+            return EXIT_FAILURE;
+        }
+
+        if (argc > 1) {
+            n = atoi(argv[1]);
+        }
+
+        if (argc > 2) {
+            nsteps = atoi(argv[2]);
+        }
+
+        if (n > MAX_PARTICLES) {
+            fprintf(stderr, "FATAL: the maximum number of particles is %d\n", MAX_PARTICLES);
+            return EXIT_FAILURE;
+        }
+
+        init_sph(n);
+    }
+    
+    MPI_Bcast(&n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    n_local = n_particles / nproc;
+    if (rank == nproc - 1) {
+      n_local += n_particles % nproc;
+    }
+    
+    local_data = (particle_t*)malloc(n_local * sizeof(particle_t));
+
+    local_count = (int*)malloc(nproc * sizeof(int));
+    local_offset = (int*)malloc(nproc *sizeof(int));
+
+    for (int i = 0; i < nproc; i++) {
+      local_count[i] = n_particles / nproc;
+      if (i == nproc - 1) {
+        local_count[i] += n_particles % nproc;
+      }
+      local_offset[i] = i* (n_particles / nproc);
     }
 
-    if (argc > 1) {
-        n = atoi(argv[1]);
-    }
+    int local_start = local_offset[rank];
+    int local_end = local_offset[rank] + local_count[rank];
 
-    if (argc > 2) {
-        nsteps = atoi(argv[2]);
-    }
-
-    if (n > MAX_PARTICLES) {
-        if (rank == 0) fprintf(stderr, "FATAL: the maximum number of particles is %d\n", MAX_PARTICLES);
-        MPI_Finalize();
-        return EXIT_FAILURE;
-    }
-
-    int particles_per_proc = n / size;
-    if (n % size != 0) particles_per_proc += 1;
-
-    if (rank == 0) init_sph(n);
-
-    MPI_Scatter(
-      particles,
-      particles_per_proc * sizeof(particle_t),
-      MPI_BYTE,
-      particles,
-      particles_per_proc * sizeof(particle_t),
-      MPI_BYTE,
-      0,
-      MPI_COMM_WORLD
-    );
+    MPI_Scatterv(particles, local_count, local_offset, MPI_FLOAT, local_data, n_local * sizeof(particle_t), MPI_BYTE, 0, MPI_COMM_WORLD);
 
     for (int s=0; s<nsteps; s++) {
-        compute_density_pressure(particles, particles_per_proc, rank, size);
-
-        MPI_Allgather(
-          MPI_IN_PLACE,
-          0,
-          MPI_DATATYPE_NULL,
-          particles,
-          particles_per_proc * sizeof(particle_t),
-          MPI_BYTE,
-          MPI_COMM_WORLD
-        );
-
-        if (rank == 0) compute_forces();
-        if (rank == 0) integrate();
+        update(local_data, local_start, local_end);
         /* the average velocities MUST be computed at each step, even
            if it is not shown (to ensure constant workload per
            iteration) */
+        const float avg = avg_velocities();
+        
+        
+        float *avg_all = NULL;
+        int *avg_count = NULL;
+        int *avg_displs = NULL;
         if (rank == 0) {
-          const float avg = avg_velocities();
-          if (s % 10 == 0) {
-            printf("step %5d, avgV=%f\n", s, avg);
-          }
+          avg_all = (float*)malloc(sizeof(float));
+          avg_count = (int*)malloc(sizeof(int));
+          avg_displs = (int*)malloc(sizeof(int));
         }
+
+        MPI_Gatherv(&avg, 1, MPI_FLOAT, avg_all, avg_count, avg_displs, MPI_FLOAT, 0, MPI_COMM_WORLD);
+
+        if (rank == 0) {
+          float avg_total = 0.0;
+          for (int i = 0; i < nproc; i++) {
+            avg_total += avg_all[i];
+          }
+          avg_total /= nproc;
+          
+          if (s % 10 == 0)
+              printf("step %5d, avgV=%f\n", s, avg_total);
+
+          free(avg_all);
+          free(avg_count);
+          free(avg_displs);
+        }
+
     }
 #endif
     free(particles);
-    MPI_Finalize();
+    free(local_data);
+    free(local_count);
+    free(local_offset);
     return EXIT_SUCCESS;
 }
