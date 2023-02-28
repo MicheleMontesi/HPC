@@ -496,5 +496,6 @@ int main(int argc, char **argv)
     free(local_data);
     free(local_count);
     free(local_offset);
+    MPI_Finalize();
     return EXIT_SUCCESS;
 }
