@@ -469,7 +469,7 @@ int main(int argc, char **argv)
     int local_start = local_offset[rank];
     int local_end = local_offset[rank] + local_count[rank];
 
-    // change the type and the size of the sent type
+    // change the type and the size of the sent and received type
     MPI_Scatterv(particles, local_count, local_offset, MPI_FLOAT, local_data, n_local * sizeof(particle_t), MPI_BYTE, 0, MPI_COMM_WORLD);
 
     for (int s=0; s<nsteps; s++) {
