@@ -480,6 +480,7 @@ int main(int argc, char **argv)
            if it is not shown (to ensure constant workload per
            iteration) */
         const float avg = avg_velocities();
+        printf("%f", avg);
         float global_avg;
 
         // printf("%d %f\n", rank, avg);
@@ -498,6 +499,7 @@ int main(int argc, char **argv)
     free(local_data);
     free(local_count);
     free(local_offset);
+    MPI_Type_free(&mpi_particle);
     MPI_Finalize();
     return EXIT_SUCCESS;
 }
