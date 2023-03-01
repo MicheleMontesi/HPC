@@ -385,6 +385,21 @@ int main(int argc, char **argv)
     particle_t *local_data;   /** dati particelle locali */
     int *local_count;         /** conteggio delle particelle in ogni processo */
     int *local_offset;        /** offset dei dati delle particelle locali */
+    
+    /** 
+     * define 
+     * - an array with amount of every part of the struct particle_t 
+     * - an array with the offset of every element in the struct
+     * - an array with the types of the element of the struct
+     * 
+     * then create an MPI_Datatype of the struct
+     * */
+    int block_lengths[] = {1, 1, 1, 1, 1, 1, 1, 1};
+    MPI_Aint displacements[] = {0, sizeof(float), 2*sizeof(float), 3*sizeof(float), 4*sizeof(float), 5*sizeof(float), 6*sizeof(float), 7*sizeof(float)};
+    MPI_Datatype types[] = {MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT};
+    MPI_Datatype mpi_particle;
+    MPI_Type_create_struct(8, block_lengths, displacements, types, &mpi_particle);
+    MPI_Type_commit(&mpi_particle);
 
     srand(1234);
 
@@ -456,7 +471,8 @@ int main(int argc, char **argv)
     int local_start = local_offset[rank];
     int local_end = local_offset[rank] + local_count[rank];
 
-    MPI_Scatterv(particles, local_count, local_offset, MPI_FLOAT, local_data, n_local * sizeof(particle_t), MPI_BYTE, 0, MPI_COMM_WORLD);
+    // change the type and the size of the sent and received type
+    MPI_Scatterv(particles, local_count, local_offset, mpi_particle, local_data, n_local, mpi_particle, 0, MPI_COMM_WORLD);
 
     for (int s=0; s<nsteps; s++) {
         update(local_data, local_start, local_end);
