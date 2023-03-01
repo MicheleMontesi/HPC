@@ -265,13 +265,13 @@ void integrate( particle_t *local_data, int start, int end )
     }
 }
 
-float avg_velocities( void )
+float avg_velocities( particle_t *local_data, int local_start, int local_end )
 {
     double result = 0.0;
-    for (int i=0; i<n_particles; i++) {
+    for (int i=local_start; i<local_end; i++) {
         /* the hypot(x,y) function is equivalent to sqrt(x*x +
            y*y); */
-        result += hypot(particles[i].vx, particles[i].vy) / n_particles;
+        result += hypot(local_data[i].vx, local_data[i].vy) / local_end;
     }
     return result;
 }
@@ -434,10 +434,6 @@ int main(int argc, char **argv)
             n = atoi(argv[1]);
         }
 
-        if (argc > 2) {
-            nsteps = atoi(argv[2]);
-        }
-
         if (n > MAX_PARTICLES) {
             fprintf(stderr, "FATAL: the maximum number of particles is %d\n", MAX_PARTICLES);
             return EXIT_FAILURE;
@@ -445,7 +441,11 @@ int main(int argc, char **argv)
 
         init_sph(n);
     }
-    
+
+    if (argc > 2) {
+        nsteps = atoi(argv[2]);
+    }
+        
     MPI_Bcast(&n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     n_local = n_particles / nproc;
@@ -468,24 +468,20 @@ int main(int argc, char **argv)
 
     printf("rank = %d, offset = %d, count = %d\n", rank, local_offset[rank], local_count[rank]);
 
-    int local_start = local_offset[rank];
-    int local_end = local_offset[rank] + local_count[rank];
-
     // change the type and the size of the sent and received type
     MPI_Scatterv(particles, local_count, local_offset, mpi_particle, local_data, n_local, mpi_particle, 0, MPI_COMM_WORLD);
 
+    float global_avg = 0;
+
     for (int s=0; s<nsteps; s++) {
-        update(local_data, local_start, local_end);
+        update(local_data, 0, n_local);
         /* the average velocities MUST be computed at each step, even
            if it is not shown (to ensure constant workload per
            iteration) */
-        const float avg = avg_velocities();
-        printf("%f", avg);
-        float global_avg;
+        const float avg = avg_velocities(local_data, 0, n_local);
 
         // printf("%d %f\n", rank, avg);
 
-        MPI_Barrier(MPI_COMM_WORLD);
         MPI_Reduce(&avg, &global_avg, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
         
         if (rank == 0) {
