@@ -178,7 +178,7 @@ void compute_density_pressure( particle_t *local_data, int start, int end )
     for (int i=start; i<end; i++) {
         particle_t *pi = &local_data[i];
         pi->rho = 0.0;
-        for (int j=0; j<n_particles; j++) {
+        for (int j=start; j<end; j++) {
             const particle_t *pj = &local_data[j];
 
             const float dx = pj->x - pi->x;
@@ -207,7 +207,7 @@ void compute_forces( particle_t *local_data, int start, int end )
         float fpress_x = 0.0, fpress_y = 0.0;
         float fvisc_x = 0.0, fvisc_y = 0.0;
 
-        for (int j=0; j<n_particles; j++) {
+        for (int j=start; j<end; j++) {
             const particle_t *pj = &local_data[j];
 
             if (pi == pj)
