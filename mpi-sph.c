@@ -395,19 +395,10 @@ int main(int argc, char **argv)
      * then create an MPI_Datatype of the struct
      * */
     int block_lengths[] = {1, 1, 1, 1, 1, 1, 1, 1};
+    MPI_Aint displacements[] = {0, sizeof(float), 2*sizeof(float), 3*sizeof(float), 4*sizeof(float), 5*sizeof(float), 6*sizeof(float), 7*sizeof(float)};
     MPI_Aint displacements[8];
     MPI_Datatype types[] = {MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT};
     MPI_Datatype mpi_particle;
-    
-displacements[0] = offsetof(particle_t, x);
-displacements[1] = offsetof(particle_t, y);
-displacements[2] = offsetof(particle_t, vx);
-displacements[3] = offsetof(particle_t, vy);
-displacements[4] = offsetof(particle_t, fx);
-displacements[5] = offsetof(particle_t, fy);
-displacements[6] = offsetof(particle_t, rho);
-displacements[7] = offsetof(particle_t, p);
-
     MPI_Type_create_struct(8, block_lengths, displacements, types, &mpi_particle);
     MPI_Type_commit(&mpi_particle);
 
@@ -488,15 +479,15 @@ displacements[7] = offsetof(particle_t, p);
         compute_density_pressure(local_data, 0, local_count[rank]);
         MPI_Barrier(MPI_COMM_WORLD);
         MPI_Allgatherv(local_data, local_count[rank], mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD);
-        
+
         compute_forces(local_data, 0, local_count[rank]);
         MPI_Barrier(MPI_COMM_WORLD);
         MPI_Allgatherv(local_data, local_count[rank], mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD);
-        
+
         integrate(local_data, 0, local_count[rank]);
         MPI_Barrier(MPI_COMM_WORLD);
         MPI_Allgatherv(local_data, local_count[rank], mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD);
-        
+
         /* the average velocities MUST be computed at each step, even
            if it is not shown (to ensure constant workload per
            iteration) */
