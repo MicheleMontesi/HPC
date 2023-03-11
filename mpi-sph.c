@@ -396,7 +396,6 @@ int main(int argc, char **argv)
      * */
     int block_lengths[] = {1, 1, 1, 1, 1, 1, 1, 1};
     MPI_Aint displacements[] = {0, sizeof(float), 2*sizeof(float), 3*sizeof(float), 4*sizeof(float), 5*sizeof(float), 6*sizeof(float), 7*sizeof(float)};
-    MPI_Aint displacements[8];
     MPI_Datatype types[] = {MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT};
     MPI_Datatype mpi_particle;
     MPI_Type_create_struct(8, block_lengths, displacements, types, &mpi_particle);
