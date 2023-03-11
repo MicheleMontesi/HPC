@@ -484,7 +484,19 @@ displacements[7] = offsetof(particle_t, p);
     float global_avg = 0;
 
     for (int s=0; s<nsteps; s++) {
-        update(local_data, 0, n_local);
+        // update(local_data, 0, n_local);
+        compute_density_pressure(local_data, 0, local_count[rank]);
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Allgatherv(local_data, local_count[rank], mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD);
+        
+        compute_forces(local_data, 0, local_count[rank]);
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Allgatherv(local_data, local_count[rank], mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD);
+        
+        integrate(local_data, 0, local_count[rank]);
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Allgatherv(local_data, local_count[rank], mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD);
+        
         /* the average velocities MUST be computed at each step, even
            if it is not shown (to ensure constant workload per
            iteration) */
