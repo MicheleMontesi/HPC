@@ -178,8 +178,8 @@ void compute_density_pressure( particle_t *local_data, int start, int end )
     for (int i=start; i<end; i++) {
         particle_t *pi = &local_data[i];
         pi->rho = 0.0;
-        for (int j=start; j<end; j++) {
-            const particle_t *pj = &local_data[j];
+        for (int j=0; j<n_particles; j++) {
+            const particle_t *pj = &particles[j];
 
             const float dx = pj->x - pi->x;
             const float dy = pj->y - pi->y;
@@ -207,8 +207,8 @@ void compute_forces( particle_t *local_data, int start, int end )
         float fpress_x = 0.0, fpress_y = 0.0;
         float fvisc_x = 0.0, fvisc_y = 0.0;
 
-        for (int j=start; j<end; j++) {
-            const particle_t *pj = &local_data[j];
+        for (int j=0; j<n_particles; j++) {
+            const particle_t *pj = &particles[j];
 
             if (pi == pj)
                 continue;
@@ -394,11 +394,14 @@ int main(int argc, char **argv)
      * 
      * then create an MPI_Datatype of the struct
      * */
-    int block_lengths[] = {1, 1, 1, 1, 1, 1, 1, 1};
-    MPI_Aint displacements[] = {0, sizeof(float), 2*sizeof(float), 3*sizeof(float), 4*sizeof(float), 5*sizeof(float), 6*sizeof(float), 7*sizeof(float)};
-    MPI_Datatype types[] = {MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT};
+    // int block_lengths[] = {1, 1, 1, 1, 1, 1, 1, 1};
+    // MPI_Aint displacements[] = {0, sizeof(float), 2*sizeof(float), 3*sizeof(float), 4*sizeof(float), 5*sizeof(float), 6*sizeof(float), 7*sizeof(float)};
+    // MPI_Datatype types[] = {MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT};
+    // MPI_Datatype mpi_particle;
+    // MPI_Type_create_struct(8, block_lengths, displacements, types, &mpi_particle);
+    // MPI_Type_commit(&mpi_particle);
     MPI_Datatype mpi_particle;
-    MPI_Type_create_struct(8, block_lengths, displacements, types, &mpi_particle);
+    MPI_Type_contiguous(8, MPI_FLOAT, &mpi_particle);
     MPI_Type_commit(&mpi_particle);
 
     srand(1234);
@@ -447,6 +450,7 @@ int main(int argc, char **argv)
     }
         
     MPI_Bcast(&n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(particles, n_particles, mpi_particle, 0, MPI_COMM_WORLD);
 
     n_local = n_particles / nproc;
     if (rank == nproc - 1) {
@@ -475,18 +479,17 @@ int main(int argc, char **argv)
 
     for (int s=0; s<nsteps; s++) {
         // update(local_data, 0, n_local);
-        compute_density_pressure(local_data, 0, local_count[rank]);
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Allgatherv(local_data, local_count[rank], mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD);
-
-        compute_forces(local_data, 0, local_count[rank]);
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Allgatherv(local_data, local_count[rank], mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD);
-
-        integrate(local_data, 0, local_count[rank]);
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Allgatherv(local_data, local_count[rank], mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD);
-
+        compute_density_pressure(local_data, 0, n_local);
+        // MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Allgatherv(local_data, n_local, mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD); 
+        
+        compute_forces(local_data, 0, n_local);
+        // MPI_Barrier(MPI_COMM_WORLD);
+        // MPI_Allgatherv(local_data, n_local, mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD); 
+        
+        integrate(local_data, 0, n_local);
+        // MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Allgatherv(local_data, n_local, mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD); 
         /* the average velocities MUST be computed at each step, even
            if it is not shown (to ensure constant workload per
            iteration) */
