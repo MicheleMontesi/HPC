@@ -182,10 +182,12 @@ void compute_density_pressure( void )
     const float POLY6 = 4.0 / (M_PI * pow(H, 8));
     // const int CHUNK = 64;
 
+    /** Parallelize outer loop */
     #pragma omp parallel for
     for (int i=0; i<n_particles; i++) {
         particle_t *pi = &particles[i];
         float rho = 0.0;
+        /** Parallelize inner loop and sum density values */
         #pragma omp parallel for reduction(+:rho)
         for (int j=0; j<n_particles; j++) {
             const particle_t *pj = &particles[j];
@@ -212,13 +214,14 @@ void compute_forces( void )
     const float VISC_LAP = 40.0 / (M_PI * pow(H, 5));
     const float EPS = 1e-6;
 
-
+    /** Compute forces for each particle in parallel */
     #pragma omp parallel for
     for (int i=0; i<n_particles; i++) {
         particle_t *pi = &particles[i];
         float fpress_x = 0.0, fpress_y = 0.0;
         float fvisc_x = 0.0, fvisc_y = 0.0;
 
+        /** Compute forces between particle i and all other particles in parallel */
         #pragma omp parallel for reduction(+:fpress_x, fpress_y, fvisc_x, fvisc_y)
         for (int j=0; j<n_particles; j++) {
             const particle_t *pj = &particles[j];
@@ -250,17 +253,18 @@ void compute_forces( void )
 
 void integrate( void )
 {
+    /** Parallelize loop across all available threads */
     #pragma omp parallel for
     for (int i=0; i<n_particles; i++) {
         particle_t *p = &particles[i];
 
-        // calcola i valori intermedi per evitare conflitti di memoria
+        /** Calculate intermediate values to avoid memory conflicts */
         float tmp_vx = p->vx + DT * p->fx / p->rho;
         float tmp_vy = p->vy + DT * p->fy / p->rho;
         float tmp_x = p->x + DT * tmp_vx;
         float tmp_y = p->y + DT * tmp_vy;
 
-        // applica i valori intermedi
+        /** apply intermediate values to particle state */
         p->vx = tmp_vx;
         p->vy = tmp_vy;
         p->x = tmp_x;
@@ -289,6 +293,7 @@ void integrate( void )
 float avg_velocities( void )
 {
     double result = 0.0;
+    /** Parallelize loop and sum all the avg_velocity into the result */
     #pragma omp parallel for reduction(+:result)
     for (int i=0; i<n_particles; i++) {
         /* the hypot(x,y) function is equivalent to sqrt(x*x +

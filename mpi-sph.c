@@ -384,9 +384,11 @@ int main(int argc, char** argv)
 {
     double start_time, total_time;
 
+    /** Initialize MPI */
     MPI_Init(&argc, &argv);
     int rank, nproc;
 
+    /** Get rank and number of processes */
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
@@ -394,24 +396,15 @@ int main(int argc, char** argv)
       start_time = MPI_Wtime();
     }
 
-    particle_t* local_data;   /** dati particelle locali */
-    int* local_count;         /** conteggio delle particelle in ogni processo */
-    int* local_offset;        /** offset dei dati delle particelle locali */
+    particle_t* local_data;   /** local particles data */
+    int* local_count;         /** local particles count for each process */
+    int* local_offset;        /** local particles offset for each process */
 
     /**
-     * define
-     * - an array with amount of every part of the struct particle_t
-     * - an array with the offset of every element in the struct
-     * - an array with the types of the element of the struct
-     *
-     * then create an MPI_Datatype of the struct
-     * */
-     // int block_lengths[] = {1, 1, 1, 1, 1, 1, 1, 1};
-     // MPI_Aint displacements[] = {0, sizeof(float), 2*sizeof(float), 3*sizeof(float), 4*sizeof(float), 5*sizeof(float), 6*sizeof(float), 7*sizeof(float)};
-     // MPI_Datatype types[] = {MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT};
-     // MPI_Datatype mpi_particle;
-     // MPI_Type_create_struct(8, block_lengths, displacements, types, &mpi_particle);
-     // MPI_Type_commit(&mpi_particle);
+     * Create MPI_Datatype:
+     * - define the MPI datatype for particles
+     * - commit the datatype for use in communication
+     */
     MPI_Datatype mpi_particle;
     MPI_Type_contiguous(8, MPI_FLOAT, &mpi_particle);
     MPI_Type_commit(&mpi_particle);
@@ -439,6 +432,11 @@ int main(int argc, char** argv)
     int n = DAM_PARTICLES;
     int nsteps = 50;
 
+    /**
+     * Process 0 has to 
+     * - check the input parameters
+     * - initialize the SPH simulation with n particles
+     */
     if (rank == 0) {
         if (argc > 3) {
             fprintf(stderr, "Usage: %s [nparticles [nsteps]]\n", argv[0]);
@@ -461,12 +459,18 @@ int main(int argc, char** argv)
         nsteps = atoi(argv[2]);
     }
 
+    /** 
+     * Broacast
+     * - number of particles to all processes
+     * - particle data to all processes
+     */
     MPI_Bcast(&n_particles, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(particles, n_particles, mpi_particle, 0, MPI_COMM_WORLD);
 
     local_count = (int*)malloc(nproc * sizeof(int));
     local_offset = (int*)malloc(nproc * sizeof(int));
 
+    /** Determine local count and offset for particle data on each process */
     for (int i = 0; i < nproc; i++) {
         local_count[i] = n_particles / nproc;
         if (i == nproc - 1) {
@@ -479,16 +483,28 @@ int main(int argc, char** argv)
 
     printf("rank = %d, offset = %d, count = %d\n", rank, local_offset[rank], local_count[rank]);
 
+    /** Scatter all particles to each process based on the local counts and offset */
     MPI_Scatterv(particles, local_count, local_offset, mpi_particle, local_data, local_count[rank], mpi_particle, 0, MPI_COMM_WORLD);
 
     float global_avg = 0;
 
     for (int s = 0; s < nsteps; s++) {
+        /**
+         * Compute density and pressure for local particles,
+         * gather all particles from all processes,
+         * then scatter them again to each process
+         */
         compute_density_pressure(local_data, 0, local_count[rank]);
         MPI_Allgatherv(local_data, local_count[rank], mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD);
 
+        /** Compute forces on local particles */
         compute_forces(local_data, 0, local_count[rank]);
 
+        /**
+         * Integrate local particles,
+         * gather all particles from all processes,
+         * then scatter them again to each process
+         */
         integrate(local_data, 0, local_count[rank]);
         MPI_Allgatherv(local_data, local_count[rank], mpi_particle, particles, local_count, local_offset, mpi_particle, MPI_COMM_WORLD);
 
@@ -497,6 +513,7 @@ int main(int argc, char** argv)
            iteration) */
         const float avg = avg_velocities(local_data, 0, local_count[rank]);
 
+        /** Reduce average velocity to global average velocity */
         MPI_Reduce(&avg, &global_avg, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 
         if (rank == 0) {
@@ -507,17 +524,20 @@ int main(int argc, char** argv)
     }
 
 #endif
+    /** Free allocated memory and MPI_Datatype */
     free(particles);
     free(local_data);
     free(local_count);
     free(local_offset);
     MPI_Type_free(&mpi_particle);
 
+    /** If process 0, print total execution time */
     if(rank == 0) {
       total_time = MPI_Wtime() - start_time;
       printf("Total Time: %f seconds\n", total_time);
     }
 
+    /** Terminate MPI */
     MPI_Finalize();
     
     return EXIT_SUCCESS;
