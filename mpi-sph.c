@@ -1,3 +1,8 @@
+/**
+ * Student: Montesi Michele
+ * Badge number: 0000974934
+ */
+
 /****************************************************************************
  *
  * sph.c -- Smoothed Particle Hydrodynamics
