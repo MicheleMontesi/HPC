@@ -1,0 +1,66 @@
+\documentclass[a4paper, 12pt]{report}
+
+% Packages
+\usepackage[protrusion=false]{microtype}
+\usepackage{setspace}
+
+% Language Package
+\usepackage[italian]{babel}
+\usepackage[italian]{cleveref}
+\usepackage[toc,page]{appendix}
+
+% Environments
+\newenvironment{packed_enum}{
+\begin{enumerate}
+        \setlength{\itemsep}{1pt}
+        \setlength{\parskip}{0pt}
+        \setlength{\parsep}{0pt}
+}{\end{enumerate}}
+
+\newenvironment{packed_itemize}{
+\begin{itemize}
+        \setlength{\itemsep}{1pt}
+        \setlength{\parskip}{0pt}
+        \setlength{\parsep}{0pt}
+}{\end{itemize}}
+
+% Initialization
+\title{Relazione Progetto HPC 2023}
+\author{Michele Montesi \\
+        Matricola: 0000974934 \\
+        E-Mail: michele.montesi3@studio.unibo.it}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\chapter{Introduzione}
+\begin{sloppypar}
+La presente ricerca presenta lo sviluppo di due versioni parallelizzate del software \texttt{sph.c}, 
+implementate utilizzando la libreria \texttt{OpenMP} e la libreria \texttt{MPI} rispettivamente. 
+L'obiettivo della ricerca è quello di valutare i vantaggi prodotti dall'utilizzo della programmazione multi-processore 
+confrontando poi le prestazioni delle due versioni su macchine con architetture differenti.
+\end{sloppypar}
+
+\bigskip
+
+\begin{sloppypar}
+\noindent
+Durante la fase di test, le due versioni sono state eseguite su due macchine:
+\begin{packed_enum}
+  \item Computer multipurpose: \texttt{AMD Ryzen 9 3900} a 12 core
+  \item Server ISI-Raptor: \texttt{Intel(R) Xeon(R) E5-2603 v4} a 12 core
+\end{packed_enum} 
+L'analisi dei risultati ha evidenziato che l'architettura delle macchine ha un impatto significativo sulle 
+prestazioni del software, influenzate dalle risorse hardware e dalle modalità di parallelizzazione utilizzate.
+\end{sloppypar}
+
+\chapter{Versione OpenMP}
+
+\chapter{Versione MPI}
+
+\chapter{Conclusioni}
+
+\end{document}
