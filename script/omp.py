@@ -18,7 +18,7 @@ except:
 num_particles_step = 100
 num_steps = 50
 num_procs_start = 2
-num_procs_end = 12
+num_procs_end = 6
 output_file = 'output.xlsx'
 
 if os.path.isfile(output_file):
@@ -41,7 +41,7 @@ for num_particles in range(num_particles_start, num_particles_end + num_particle
             print(f"Tempo impiegato: {single_proc_time}")
             speedup = 1.0
             print(f"Speedup: {speedup}")
-            df = pd.concat([df, pd.DataFrame({'Num. Particles': [num_particles], 'Num. Processes': 1, 'Time': [time], 'Speedup': [speedup]})], ignore_index=True)
+            df = pd.concat([df, pd.DataFrame({'Num. Particles': [num_particles], 'Num. Processes': 1, 'Time': [single_proc_time], 'Speedup': [speedup]})], ignore_index=True)
         else:
             print("Errore: impossibile trovare il tempo di esecuzione")
     else:
