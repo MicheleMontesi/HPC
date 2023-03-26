@@ -455,7 +455,7 @@ int main(int argc, char **argv)
             printf("step %5d, avgV=%f\n", s, avg);
     }
     const double elapsed = omp_get_wtime() - tstart;
-    printf("Elapsed time: %f seconds\n", elapsed);
+    printf("Total Time: %f seconds\n", elapsed);
 #endif
     free(particles);
     return EXIT_SUCCESS;
