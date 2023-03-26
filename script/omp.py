@@ -38,7 +38,7 @@ for num_particles in range(num_particles_start, num_particles_end + num_particle
         if len(single_proc_time_line) > 0:
             single_proc_time_str = re.search(r'\d+\.\d+', single_proc_time_line[0]).group(0)
             single_proc_time = float(single_proc_time_str)
-            print(f"Tempo impiegato: {time}")
+            print(f"Tempo impiegato: {single_proc_time}")
             speedup = 1.0
             print(f"Speedup: {speedup}")
             df = pd.concat([df, pd.DataFrame({'Num. Particles': [num_particles], 'Num. Processes': [num_procs], 'Time': [time], 'Speedup': [speedup]})], ignore_index=True)
