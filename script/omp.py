@@ -41,7 +41,7 @@ for num_particles in range(num_particles_start, num_particles_end + num_particle
             print(f"Tempo impiegato: {single_proc_time}")
             speedup = 1.0
             print(f"Speedup: {speedup}")
-            df = pd.concat([df, pd.DataFrame({'Num. Particles': [num_particles], 'Num. Processes': [num_procs], 'Time': [time], 'Speedup': [speedup]})], ignore_index=True)
+            df = pd.concat([df, pd.DataFrame({'Num. Particles': [num_particles], 'Num. Processes': 1, 'Time': [time], 'Speedup': [speedup]})], ignore_index=True)
         else:
             print("Errore: impossibile trovare il tempo di esecuzione")
     else:
