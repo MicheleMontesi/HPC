@@ -19,19 +19,19 @@ num_particles_step = 100
 num_steps = 50
 num_procs_start = 1
 num_procs_end = 12
-output_file = 'output.xlsx'
+output_file = 'mpi_output.xlsx'
 
 if os.path.isfile(output_file):
   n = 1
-  while os.path.isfile(f"output_{n}.xlsx"):
+  while os.path.isfile(f"mpi_output_{n}.xlsx"):
     n += 1
-  output_file = f"output_{n}.xlsx"
+  output_file = f"mpi_output_{n}.xlsx"
 
 # Crea un DataFrame vuoto
 df = pd.DataFrame(columns=['Num. Particles', 'Num. Processes', 'Time', 'Speedup'])
 
 for num_particles in range(num_particles_start, num_particles_end + num_particles_step, num_particles_step):
-    single_proc_command = f"mpiexec -n 1 ./mpi-sph.exe {num_particles} {num_steps}"
+    single_proc_command = f"mpirun -n 1 ./mpi-sph.o {num_particles} {num_steps}"
     single_proc_result = subprocess.run(single_proc_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if single_proc_result.returncode == 0:
         single_proc_time_line = [line for line in single_proc_result.stdout.strip().split('\n') if 'Total Time: ' in line]
@@ -40,7 +40,7 @@ for num_particles in range(num_particles_start, num_particles_end + num_particle
             single_proc_time = float(single_proc_time_str)
 
     for num_procs in range(num_procs_start, num_procs_end + 1):
-        command = f"mpiexec -n {num_procs} ./mpi-sph.exe {num_particles} {num_steps}"
+        command = f"mpirun -n {num_procs} ./mpi-sph.o {num_particles} {num_steps}"
         print(f"Eseguo il comando: {command}")
         result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if result.returncode == 0:

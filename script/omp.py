@@ -18,20 +18,21 @@ except:
 num_particles_step = 100
 num_steps = 50
 num_procs_start = 2
-num_procs_end = 6
-output_file = 'output.xlsx'
+num_procs_end = 12
+output_file = 'omp_output.xlsx'
 
 if os.path.isfile(output_file):
   n = 1
-  while os.path.isfile(f"output_{n}.xlsx"):
+  while os.path.isfile(f"omp_output_{n}.xlsx"):
     n += 1
-  output_file = f"output_{n}.xlsx"
+  output_file = f"omp_output_{n}.xlsx"
 
 # Crea un DataFrame vuoto
 df = pd.DataFrame(columns=['Num. Particles', 'Num. Processes', 'Time', 'Speedup'])
 
 for num_particles in range(num_particles_start, num_particles_end + num_particles_step, num_particles_step):
     single_proc_command = f"OMP_NUM_THREADS=1 ./omp-sph.o {num_particles} {num_steps}"
+    print(f"Eseguo il comando: {single_proc_command}")
     single_proc_result = subprocess.run(single_proc_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if single_proc_result.returncode == 0:
         single_proc_time_line = [line for line in single_proc_result.stdout.strip().split('\n') if 'Total Time: ' in line]
