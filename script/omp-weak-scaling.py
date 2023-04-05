@@ -49,7 +49,8 @@ for num_particles in range(num_particles_start, num_particles_end + num_particle
         print(f"Errore durante l'esecuzione del comando: {single_proc_result.stderr}")
 
     for num_procs in range(num_procs_start, num_procs_end + 1):
-        command = f"OMP_NUM_THREADS={num_procs} ./omp-sph.o {num_particles} {num_steps}"
+        weak_particles = round(num_particles*(num_procs**(1/3)), 0)
+        command = f"OMP_NUM_THREADS={num_procs} ./omp-sph.o {weak_particles} {num_steps}"
         print(f"Eseguo il comando: {command}")
         result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if result.returncode == 0:
