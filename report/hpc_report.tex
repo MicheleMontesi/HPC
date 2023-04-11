@@ -50,40 +50,33 @@ L'obiettivo della ricerca è quello di valutare i vantaggi prodotti dall'utilizz
 
 \begin{sloppypar}
 \noindent
-Per misurare le prestazioni del software in questione è stato creato uno script python che lo esegue, incrementando
-il numero di threads partendo da 1 fino a 12 e il numero di particelle da 1400 a 5700.
-Lo script trascrive su un foglio excel i seguenti dati interessati.
-Da questi dati viene poi calcolata la media.
+Per valutare le prestazioni del software, è stato creato uno script in linguaggio Python che esegue il programma 
+con un numero crescente di thread, partendo da 1 e arrivando a 12, e con un numero di particelle che varia da 1400 
+a 5700. Lo script registra i dati rilevanti in un foglio di lavoro Excel, dai quali verrà calcolata la media.
+Queste informazioni saranno poi utilizzate per valutare le prestazioni.
+
 \end{sloppypar}
 
 {\let\clearpage\relax\chapter*{Versione OpenMP}}
 \section*{Implementazione}
 \begin{sloppypar}
   \noindent
-  In questa implementazione del software, effettuata con \textit{OpenMP}, sono stati parallelizzati attraverso 
-  \texttt{\#pragma omp parallel for}, i cicli delle funzioni indicate.
+  In questa implementazione del software, effettuata con \textit{OpenMP}, sono state parallelizzate le sezioni di codice
+  che richiedono maggiore elaborazione utilizzando la direttiva \texttt{\#pragma omp parallel for}.
 
   \smallskip
   \noindent
-  Quando necessario sono state effetuate riduzioni così da rendere più efficiente l'esecuzione del software parallelizzato.
+  Dove necessario sono state effetuate riduzioni al fine di ottimizzare le prestazioni del software parallelizzato.
 \end{sloppypar}
 
 \section*{Prestazioni}
-\subsection*{Raccolta dei dati}
 \begin{sloppypar}
   \noindent
-  Per misurare le prestazioni del software in questione è stato creato uno script python che lo esegue, incrementando
-  il numero di threads partendo da 1 fino a 12 e il numero di particelle da 1400 a 5700.
-  Lo script trascrive su un foglio excel i seguenti dati interessati.
-  Da questi dati viene poi calcolata la media.
-\end{sloppypar}
-
-\subsection*{Valutazione}
-\begin{sloppypar}
-  \noindent
-  Dalla figura \ref{fig:omp_speedup} si nota come lo \texttt{speedup}, all'aumentare del numero di threads, cresca linearmente fino
-  a 11, dove raggiunge il suo massimo, diminuendo, poi, a 12. Questo comportamento indica che 11 è il numero di threads
-  oltre il quale la parallelizzazione OMP diventa inefficiente.
+  Dalla figura \ref{fig:omp_speedup} si nota come all'aumentare del numero di thread, lo \textit{speedup} aumenti in modo significativo,
+  come si può notare dall'aumento della curva. Tuttavia, dopo aver raggiunto 8 thread, si può notare una fase di 
+  saturazione, in cui l'aumento del numero di thread non porta più 
+  a un miglioramento significativo delle prestazioni. In questo punto, l'utilizzo di thread aggiuntivi potrebbe 
+  peggiorare le prestazioni. 
 
   \begin{figure}[ht]
     \centering
@@ -93,9 +86,11 @@ Da questi dati viene poi calcolata la media.
   \end{figure}
 
   \noindent
-  Dal grafico in figura \ref{fig:omp_sse} si osserva che l'efficienza resta approssimativamente la stessa tra 2 e 10 threads,
-  diminuendo di poco con 11 e di molto con 12. La \textit{Strong Scaling Efficiency} indica come all'aumentare dei threads,
-  per uno stesso carico di lavoro, il tempo diminuisca. In questo caso fino a 11 threads l'efficienza è ragionevole.
+  Dal grafico in figura \ref{fig:omp_sse} si può notare come la \textit{Strong Scaling Efficiency} raggiunga
+  il suo picco massimo per circa 6 thread, corrispondente a un'efficienza di circa il 90\% rispetto 
+  all'efficienza ideale. Dopo il picco, questa inizia a diminuire, il che significa 
+  che l'aggiunta di thread aggiuntivi non porta a un miglioramento significativo delle prestazioni, 
+  e può addirittura causare un degrado delle prestazioni complessive.
 
   \begin{figure}[ht]
     \centering
@@ -106,10 +101,14 @@ Da questi dati viene poi calcolata la media.
 
   \bigskip
   \noindent
-  Nella figura \ref{fig:omp_wse} viene esposto l'andamento della \textit{Weak Scaling Efficiency}, la quale
-  all'aumentare dei processori aumenta la quantità di lavoro proporzionalmente, in modo da considerare se i
-  problemi con più threads vengono risolti nello stesso tempo del problema lineare. In questo caso fino a 11
-  threads il tempo è all'incirca lo stesso, mentre con 12 il tempo aumenta.
+  Nella figura \ref{fig:omp_wse} si può notare come la \textit{Weak Scaling Efficiency} rimanga costante 
+  all'aumentare della dimensione del problema. Questo indica che il software è in grado di gestire in 
+  modo efficiente problemi di dimensioni diverse, distribuendo il carico di lavoro tra le CPU disponibili 
+  senza una diminuzione significativa delle prestazioni. Questa costante è un'indicatore
+  di una buona scalabilità del software. A 12 thread, l'efficienza debole cala, indicando che l'aggiunta diulteriori CPU
+  non comporta migliori prestazioni.
+
+
 
   \begin{figure}[ht]
     \centering
