@@ -28,7 +28,7 @@ if os.path.isfile(output_file):
   output_file = f"omp_output_{n}.xlsx"
 
 # Crea un DataFrame vuoto
-df = pd.DataFrame(columns=['Num. Particles', 'Num. Processes', 'Time', 'Speedup'])
+df = pd.DataFrame(columns=['Num. Particles', 'Num. Processes', 'Time', 'Weak Scaling Efficiency'])
 
 for num_particles in range(num_particles_start, num_particles_end + num_particles_step, num_particles_step):
     single_proc_command = f"OMP_NUM_THREADS=1 ./omp-sph.o {num_particles} {num_steps}"
@@ -40,9 +40,9 @@ for num_particles in range(num_particles_start, num_particles_end + num_particle
             single_proc_time_str = re.search(r'\d+\.\d+', single_proc_time_line[0]).group(0)
             single_proc_time = float(single_proc_time_str)
             print(f"Tempo impiegato: {single_proc_time}")
-            speedup = 1.0
-            print(f"Speedup: {speedup}")
-            df = pd.concat([df, pd.DataFrame({'Num. Particles': [num_particles], 'Num. Processes': 1, 'Time': [single_proc_time], 'Speedup': [speedup]})], ignore_index=True)
+            wse = 1.0
+            print(f"WSE: {wse}")
+            df = pd.concat([df, pd.DataFrame({'Num. Particles': [num_particles], 'Num. Processes': 1, 'Time': [single_proc_time], 'Weak Scaling Efficiency': [wse]})], ignore_index=True)
         else:
             print("Errore: impossibile trovare il tempo di esecuzione")
     else:
@@ -60,9 +60,9 @@ for num_particles in range(num_particles_start, num_particles_end + num_particle
                 time_str = re.search(r'\d+\.\d+', time_line[0]).group(0)
                 time = float(time_str)
                 print(f"Tempo impiegato: {time}")
-                speedup = single_proc_time / time
-                print(f"Speedup: {speedup}")
-                df = pd.concat([df, pd.DataFrame({'Num. Particles': [num_particles], 'Num. Processes': [num_procs], 'Time': [time], 'Speedup': [speedup]})], ignore_index=True)
+                wse = single_proc_time / time
+                print(f"WSE: {wse}")
+                df = pd.concat([df, pd.DataFrame({'Num. Particles': [num_particles], 'Num. Processes': [num_procs], 'Time': [time], 'Weak Scaling Efficiency': [wse]})], ignore_index=True)
             else:
                 print("Errore: impossibile trovare il tempo di esecuzione")
         else:
