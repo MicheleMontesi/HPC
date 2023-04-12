@@ -85,7 +85,7 @@ I software sono sati testati sul server \texttt{ISI-Raptor}
   \begin{figure}[ht]
     \centering
     \includegraphics[width=9cm]{img/omp-speedup.png}
-    \caption{OpenMP implementation's average speedup}
+    \caption{Speedup dell'implementazione con OpenMP}
     \label{fig:omp_speedup}
   \end{figure}
 
@@ -99,7 +99,7 @@ I software sono sati testati sul server \texttt{ISI-Raptor}
   \begin{figure}[ht]
     \centering
     \includegraphics[width=9cm]{img/omp-sse.png}
-    \caption{OpenMP implementation's average strong scaling efficiency}
+    \caption{Strong scaling efficiency dell'implementazione con OpenMP}
     \label{fig:omp_sse}
   \end{figure}
 
@@ -109,15 +109,14 @@ I software sono sati testati sul server \texttt{ISI-Raptor}
   all'aumentare della dimensione del problema. Questo indica che il software è in grado di gestire in 
   modo efficiente problemi di dimensioni diverse, distribuendo il carico di lavoro tra le CPU disponibili 
   senza una diminuzione significativa delle prestazioni. Questa costante è un'indicatore
-  di una buona scalabilità del software. A 12 thread, l'efficienza debole cala, indicando che l'aggiunta diulteriori CPU
+  di una buona scalabilità del software. A 12 thread, l'efficienza debole cala, indicando che l'aggiunta di ulteriori
   non comporta migliori prestazioni.
-
 
 
   \begin{figure}[ht]
     \centering
     \includegraphics[width=9cm]{img/omp-wse.png}
-    \caption{OpenMP implementation's average weak scaling efficiency}
+    \caption{Weak scaling efficiency dell'implementazione con OpenMP}
     \label{fig:omp_wse}
   \end{figure}
 \end{sloppypar}
@@ -132,8 +131,80 @@ Alla fine, dopo aver calcolato la velocità media delle particelle locali, viene
 Questo risultato viene diviso per tutti i processi ottenendo così la velocità media complessiva.
 
 \section*{Prestazioni}
+\begin{sloppypar}
+  \noindent
+  Dalla figura \ref{fig:mpi_speedup} si può notare che le prestazioni del software aumentano in modo 
+  quasi lineare all'aumentare del numero di unità di elaboraizone utilizzate. Tuttavia, il guadagno di prestazioni in 
+  termini di \textit{speedup} diminuisce man mano che se ne aggiungono di nuove, a causa di fattori come l'aumento 
+  del tempo di comunicazione tra di esse, la necessità di sincronizzazione tra i processi e la presenza di 
+  parti del software che non possono essere parallelizzate. Inoltre, si può notare che lo \textit{speedup} 
+  inizia a saturare intorno a 8 core.
 
+  \begin{figure}[ht]
+    \centering
+    \includegraphics[width=9cm]{img/mpi-speedup.png}
+    \caption{Speedup dell'implementazione con MPI}
+    \label{fig:mpi_speedup}
+  \end{figure}
+
+  \noindent
+  Dal grafico in figura \ref{fig:mpi_sse} emerge che la \textit{Strong Scaling Efficiency} raggiunge il suo 
+  massimo picco intorno a 6 core, ottenendo un'efficienza di circa il 90\% rispetto all'efficienza ideale. 
+  Tuttavia, dopo il picco, l'efficienza inizia a diminuire, indicando che l'aggiunta di ulteriori core non 
+  comporta un miglioramento significativo delle prestazioni, rischiando inoltre di peggiorarle in alcuni casi.
+
+  \begin{figure}[ht]
+    \centering
+    \includegraphics[width=9cm]{img/mpi-sse.png}
+    \caption{Strong scaling efficiency dell'implementazione con MPI}
+    \label{fig:mpi_sse}
+  \end{figure}
+
+  \newpage
+  \noindent
+  Il grafico della \textit{Weak Scaling Efficiency} (Figura \ref{fig:mpi_wse}) mostra che l'efficienza del software rimane costante 
+  al variare della dimensione del problema. Ciò suggerisce che questo è in grado di gestire in modo 
+  efficiente problemi di dimensioni diverse, distribuendo il carico di lavoro tra le CPU disponibili senza 
+  una diminuzione significativa delle prestazioni. Questo è un indicatore della buona scalabilità del software. 
+  Tuttavia, l'aggiunta di ulteriori core oltre i 12 porta ad una diminuzione dell'efficienza debole, 
+  indicando che l'uso di ulteriori risorse non si traduce in un miglioramento delle prestazioni.
+
+  \begin{figure}[ht]
+    \centering
+    \includegraphics[width=9cm]{img/mpi-wse.png}
+    \caption{Weak scaling efficiency dell'implementazione con MPI}
+    \label{fig:mpi_wse}
+  \end{figure}
+
+\end{sloppypar}
 
 \chapter*{Conclusioni}
+\begin{sloppypar}
+  \noindent
+  L'implementazione del software con \textit{OpenMP} ha portato a notevoli miglioramenti delle prestazioni, 
+  come indicato dal grafico di \textit{speedup} in funzione del numero di \textit{thread}. Si è osservato che l'aumento 
+  del numero di questi ha portato a un miglioramento significativo delle prestazioni fino a un certo punto, 
+  dopodiché l'effetto positivo si è saturato, indicando che l'utilizzo di ulteriori potrebbe 
+  persino peggiorare le prestazioni. La \textit{strong scaling efficiency} è risultata piuttosto elevata 
+  per i casi con un numero ridotto di \textit{thread}, 
+  ma è diminuita con l'aumento del numero di questi. La \textit{weak scaling efficiency} è stata buona e costante 
+  al variare del numero di processori.
 
+  \bigskip
+  \noindent
+  L'implementazione con \textit{MPI} ha portato a una significativa riduzione dei tempi di esecuzione rispetto 
+  alla versione sequenziale del software, come indicato dal grafico di \textit{speedup} in funzione del numero di 
+  processori. Si è osservato che la \textit{strong scaling efficiency} è stata molto elevata per tutti i casi analizzati, 
+  indicando una buona scalabilità del software. La \textit{weak scaling efficiency} è stata buona e costante 
+  al variare del numero di processori.
+
+  \bigskip
+  \noindent
+  In conclusione, l'implementazione del software con \textit{OpenMP} e \textit{MPI} ha portato a significativi 
+  miglioramenti delle prestazioni rispetto alla versione sequenziale. L'approccio OpenMP è 
+  particolarmente efficace per problemi di dimensioni limitate e con un numero ridotto di thread, 
+  mentre l'approccio \textit{MPI} è più efficiente per problemi di dimensioni maggiori e con 
+  un numero elevato di processori.
+\end{sloppypar}
+  
 \end{document}
