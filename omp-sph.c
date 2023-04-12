@@ -174,13 +174,12 @@ void init_sph( int n )
 
 void compute_density_pressure( void )
 {
-    const float HSQ = H * H;    // radius^2 for optimization
+    const float HSQ = H * H;
 
     /* Smoothing kernels defined in Muller and their gradients adapted
        to 2D per "SPH Based Shallow Water Simulation" by Solenthaler
        et al. */
     const float POLY6 = 4.0 / (M_PI * pow(H, 8));
-    // const int CHUNK = 64;
 
     /** Parallelize outer loop */
     #pragma omp parallel for
@@ -231,15 +230,13 @@ void compute_forces( void )
 
             const float dx = pj->x - pi->x;
             const float dy = pj->y - pi->y;
-            const float dist = hypotf(dx, dy) + EPS; // avoids division by zero later on
+            const float dist = hypotf(dx, dy) + EPS;
 
             if (dist < H) {
                 const float norm_dx = dx / dist;
                 const float norm_dy = dy / dist;
-                // compute pressure force contribution
                 fpress_x += -norm_dx * MASS * (pi->p + pj->p) / (2 * pj->rho) * SPIKY_GRAD * pow(H - dist, 3);
                 fpress_y += -norm_dy * MASS * (pi->p + pj->p) / (2 * pj->rho) * SPIKY_GRAD * pow(H - dist, 3);
-                // compute viscosity force contribution
                 fvisc_x += VISC * MASS * (pj->vx - pi->vx) / pj->rho * VISC_LAP * (H - dist);
                 fvisc_y += VISC * MASS * (pj->vy - pi->vy) / pj->rho * VISC_LAP * (H - dist);
             }
@@ -270,7 +267,6 @@ void integrate( void )
         p->x = tmp_x;
         p->y = tmp_y;
 
-        // enforce boundary conditions
         if (p->x - EPS < 0.0) {
             p->vx *= BOUND_DAMPING;
             p->x = EPS;
@@ -296,8 +292,6 @@ float avg_velocities( void )
     /** Parallelize loop and sum all the avg_velocity into the result */
     #pragma omp parallel for reduction(+:result)
     for (int i=0; i<n_particles; i++) {
-        /* the hypot(x,y) function is equivalent to sqrt(x*x +
-           y*y); */
         result += hypot(particles[i].vx, particles[i].vy) / n_particles;
     }
     return result;
