@@ -42,8 +42,8 @@
 \chapter*{Introduzione}
 \begin{sloppypar}
 La presente ricerca presenta lo sviluppo di due versioni parallelizzate del software \texttt{sph.c}, 
-implementate utilizzando la libreria \texttt{OpenMP} e la libreria \texttt{MPI} rispettivamente. 
-L'obiettivo della ricerca è quello di valutare i vantaggi prodotti dall'utilizzo della programmazione multi-processore.
+implementate utilizzando la libreria \textit{OpenMP} e la libreria \textit{MPI} rispettivamente. 
+L'obiettivo della ricerca è quello di valutare i vantaggi prodotti dall'utilizzo della programmazione multiprocessore.
 \end{sloppypar}
 
 \bigskip
@@ -51,13 +51,13 @@ L'obiettivo della ricerca è quello di valutare i vantaggi prodotti dall'utilizz
 \begin{sloppypar}
 \noindent
 Per valutare le prestazioni del software, è stato creato uno script in linguaggio Python che esegue il programma 
-con un numero crescente di thread, partendo da 1 e arrivando a 12, e con un numero di particelle che varia da 1400 
+con un numero crescente di thread per \textit{OpenMP} e di processi per \textit{MPI}, partendo da 1 e arrivando a 12, e con un numero di particelle che varia da 1400 
 a 5700. Lo script registra i dati rilevanti in un foglio di lavoro Excel, dai quali verrà calcolata la media.
 Queste informazioni saranno poi utilizzate per valutare le prestazioni.
 
 \bigskip
 \noindent
-I software sono sati testati sul server \texttt{ISI-Raptor}
+I software sono stati testati sul server \texttt{ISI-Raptor}
 
 \end{sloppypar}
 
@@ -70,7 +70,7 @@ I software sono sati testati sul server \texttt{ISI-Raptor}
 
   \smallskip
   \noindent
-  Dove necessario sono state effetuate riduzioni al fine di ottimizzare le prestazioni del software parallelizzato.
+  Dove necessario sono state effettuate riduzioni al fine di ottimizzare le prestazioni del software parallelizzato.
 \end{sloppypar}
 
 \section*{Prestazioni}
@@ -78,7 +78,7 @@ I software sono sati testati sul server \texttt{ISI-Raptor}
   \noindent
   Dalla figura \ref{fig:omp_speedup} si nota come all'aumentare del numero di thread, lo \textit{speedup} aumenti in modo significativo,
   come si può notare dall'aumento della curva. Tuttavia, dopo aver raggiunto 8 thread, si può notare una fase di 
-  saturazione, in cui l'aumento del numero di thread non porta più 
+  saturazione, in cui l'aumento del numero di essi non porta più 
   a un miglioramento significativo delle prestazioni. In questo punto, l'utilizzo di thread aggiuntivi potrebbe 
   peggiorare le prestazioni. 
 
@@ -103,12 +103,12 @@ I software sono sati testati sul server \texttt{ISI-Raptor}
     \label{fig:omp_sse}
   \end{figure}
 
-  \bigskip
+  \newpage
   \noindent
   Nella figura \ref{fig:omp_wse} si può notare come la \textit{Weak Scaling Efficiency} rimanga costante 
   all'aumentare della dimensione del problema. Questo indica che il software è in grado di gestire in 
   modo efficiente problemi di dimensioni diverse, distribuendo il carico di lavoro tra le CPU disponibili 
-  senza una diminuzione significativa delle prestazioni. Questa costante è un'indicatore
+  senza una diminuzione significativa delle prestazioni. Questa costante è un indicatore
   di una buona scalabilità del software. A 12 thread, l'efficienza debole cala, indicando che l'aggiunta di ulteriori
   non comporta migliori prestazioni.
 
@@ -124,7 +124,7 @@ I software sono sati testati sul server \texttt{ISI-Raptor}
 {\let\clearpage\relax\chapter*{Versione MPI}}
 \section*{Implementazione}
 Per l'implementazione del software con \texttt{MPI} è stato creato un \texttt{MPI\_Datatype} contiguo per incapsulare la struttura
-dati durante lo scambio di messagi. Per suddividere le particelle fra tutti i processori viene fatta una \texttt{MPI\_Scatterv} dal processo 0.
+dati durante lo scambio di messaggi. Per suddividere le particelle fra tutti i processori viene fatta una \texttt{MPI\_Scatterv} dal processo 0.
 Dopo \texttt{compute\_density\_pressure} e \texttt{integrate} viene chiamata una \texttt{MPI\_Allgatherv} per raccogliere i dati elaborati
 e ridistribuirli nuovamente a tutti i processori mentre per \texttt{compute\_forces} non viene fatto in quanto questo agisce solamente in locale.
 Alla fine, dopo aver calcolato la velocità media delle particelle locali, viene eseguita una \texttt{MPI\_Reduce} con operatore somma.
@@ -134,7 +134,7 @@ Questo risultato viene diviso per tutti i processi ottenendo così la velocità 
 \begin{sloppypar}
   \noindent
   Dalla figura \ref{fig:mpi_speedup} si può notare che le prestazioni del software aumentano in modo 
-  quasi lineare all'aumentare del numero di unità di elaboraizone utilizzate. Tuttavia, il guadagno di prestazioni in 
+  quasi lineare all'aumentare del numero di unità di elaborazione utilizzate. Tuttavia, il guadagno di prestazioni in 
   termini di \textit{speedup} diminuisce man mano che se ne aggiungono di nuove, a causa di fattori come l'aumento 
   del tempo di comunicazione tra di esse, la necessità di sincronizzazione tra i processi e la presenza di 
   parti del software che non possono essere parallelizzate. Inoltre, si può notare che lo \textit{speedup} 
@@ -166,7 +166,7 @@ Questo risultato viene diviso per tutti i processi ottenendo così la velocità 
   al variare della dimensione del problema. Ciò suggerisce che questo è in grado di gestire in modo 
   efficiente problemi di dimensioni diverse, distribuendo il carico di lavoro tra le CPU disponibili senza 
   una diminuzione significativa delle prestazioni. Questo è un indicatore della buona scalabilità del software. 
-  Tuttavia, l'aggiunta di ulteriori core oltre i 12 porta ad una diminuzione dell'efficienza debole, 
+  Tuttavia, l'aggiunta di ulteriori core oltre i 12 porta a una diminuzione dell'efficienza debole, 
   indicando che l'uso di ulteriori risorse non si traduce in un miglioramento delle prestazioni.
 
   \begin{figure}[ht]
